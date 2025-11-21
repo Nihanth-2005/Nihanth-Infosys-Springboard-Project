@@ -127,21 +127,107 @@ const firebaseConfig = {
 
 ```
 .
+├── .gitignore
+├── LICENSE
+├── QUICKSTART.md
+├── README.md
+├── run-backend.bat
+├── run-frontend.bat
+├── TROUBLESHOOTING.md
+├── eda.ipynb
 ├── backend/
-│   ├── app.py              # Flask application
-│   ├── requirements.txt    # Python dependencies
-│   ├── uploads/            # Uploaded datasets
-│   ├── models/             # Trained models
-│   └── workspace.db       # SQLite database
+│   ├── app.py                    # Flask application
+│   ├── factual_embeddings.pkl    # Pretrained embeddings
+│   ├── install-windows.bat       # Windows installation script
+│   ├── install-windows.ps1       # PowerShell installation script
+│   ├── pretrain_base_model.py    # Model pretraining script
+│   ├── requirements-simple.txt   # Simplified dependencies
+│   ├── requirements.txt          # Python dependencies
+│   ├── datasets/                 # Preloaded datasets
+│   │   ├── description.csv
+│   │   ├── diets.csv
+│   │   ├── Diseases_and_Symptoms_dataset.csv
+│   │   ├── medications.csv
+│   │   ├── precautions.csv
+│   │   └── workout.csv
+│   ├── models/                   # Trained models directory
+│   ├── rasa/                     # Rasa integration
+│   │   └── data/
+│   │       └── lookup/
+│   │           └── symptoms.yml
+│   └── uploads/                  # Uploaded datasets
 ├── frontend/
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── pages/         # Page components
-│   │   ├── firebase/      # Firebase config
-│   │   └── App.jsx        # Main app component
+│   ├── index.html
+│   ├── package-lock.json
 │   ├── package.json
-│   └── vite.config.js
-└── README.md
+│   ├── postcss.config.js
+│   ├── tailwind.config.js
+│   ├── vite.config.js
+│   └── src/
+│       ├── App.jsx
+│       ├── index.css
+│       ├── main.jsx
+│       ├── components/
+│       │   └── Workspace/
+│       │       ├── Algorithms.jsx
+│       │       ├── Chatbot.jsx
+│       │       ├── Datasets.jsx
+│       │       ├── DatasetUpload.jsx
+│       │       ├── FeedbackCollector.jsx
+│       │       ├── ModelComparison.jsx
+│       │       ├── ModelInfo.jsx
+│       │       ├── Predict.jsx
+│       │       ├── Rasa.jsx
+│       │       └── TrainingLogs.jsx
+│       ├── config/
+│       │   └── api.js
+│       ├── firebase/
+│       │   └── config.js
+│       ├── hooks/
+│       │   └── useTheme.js
+│       └── pages/
+│           ├── Dashboard.jsx
+│           ├── Login.jsx
+│           ├── Register.jsx
+│           └── Workspace.jsx
+├── Images inf project/           # Project images and screenshots
+│   ├── 3. nlu evaluation.png
+│   ├── milestone1/
+│   │   ├── login architecture.png
+│   │   ├── Screenshot (323).png
+│   │   ├── Screenshot (324).png
+│   │   ├── Screenshot (325).png
+│   │   ├── Screenshot (326).png
+│   │   └── Screenshot (327).png
+│   ├── milestone2/
+│   │   ├── Screenshot (329).png
+│   │   ├── Screenshot (330).png
+│   │   ├── Screenshot (334).png
+│   │   ├── Screenshot (335).png
+│   │   ├── Screenshot (336).png
+│   │   ├── Screenshot (337).png
+│   │   └── Screenshot (338).png
+│   ├── milestone3/
+│   │   ├── 3. nlu evaluation.png
+│   │   ├── Screenshot (339).png
+│   │   ├── Screenshot (341).png
+│   │   ├── Screenshot (342).png
+│   │   ├── Screenshot (343).png
+│   │   └── Screenshot (344).png
+│   └── milestone4/
+│       ├── deployment_architecture_svg.png
+│       ├── Screenshot (345).png
+│       ├── Screenshot (346).png
+│       ├── Screenshot (347).png
+│       ├── Screenshot (348).png
+│       └── Screenshot (349).png
+└── rasa/                         # Rasa chatbot configuration
+    ├── config.yml
+    ├── domain.yml
+    └── data/
+        ├── nlu.yml
+        └── lookup/
+            └── symptoms.yml
 ```
 
 ## API Endpoints
