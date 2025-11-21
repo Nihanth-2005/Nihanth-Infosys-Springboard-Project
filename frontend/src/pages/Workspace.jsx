@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Upload, TrendingUp, MessageSquare, BarChart3, LogOut, Moon, Sun, Database, Layers, FileText, Zap } from 'lucide-react';
+import { ArrowLeft, Upload, TrendingUp, MessageSquare, BarChart3, LogOut, Moon, Sun, Database, Layers, FileText, Zap, GitCompare } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import DatasetUpload from '../components/Workspace/DatasetUpload';
@@ -13,6 +13,7 @@ import Datasets from '../components/Workspace/Datasets';
 import TrainingLogs from '../components/Workspace/TrainingLogs';
 import FeedbackCollector from '../components/Workspace/FeedbackCollector';
 import Rasa from '../components/Workspace/Rasa';
+import ModelComparison from '../components/Workspace/ModelComparison';
 
 function Workspace({ user }) {
   const { workspaceId } = useParams();
@@ -49,6 +50,7 @@ function Workspace({ user }) {
     { id: 'datasets', label: 'Datasets', icon: Database },
     { id: 'logs', label: 'Training Logs', icon: FileText },
     { id: 'algorithms', label: 'Algorithms', icon: Layers },
+    { id: 'comparison', label: 'Model Comparison', icon: GitCompare },
     { id: 'predict', label: 'Predict', icon: TrendingUp },
     { id: 'chatbot', label: 'Chatbot', icon: MessageSquare },
     { id: 'feedback', label: 'Feedback', icon: MessageSquare },
@@ -60,16 +62,27 @@ function Workspace({ user }) {
       {/* Header */}
       <header className="glass-card border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/dashboard')}
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </motion.button>
+              <h1 className="text-2xl font-bold gradient-text">Workspace</h1>
+            </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/dashboard')}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
             </motion.button>
-            <h1 className="text-2xl font-bold gradient-text">Workspace</h1>
           </div>
         </div>
       </header>
@@ -98,6 +111,10 @@ function Workspace({ user }) {
               <button onClick={() => setActiveTab('rasa')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === 'rasa' ? 'bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
                 <Zap className="w-4 h-4" />
                 <span className="text-sm">Rasa NLU Integration</span>
+              </button>
+              <button onClick={() => setActiveTab('comparison')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === 'comparison' ? 'bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
+                <GitCompare className="w-4 h-4" />
+                <span className="text-sm">Model Comparison</span>
               </button>
               <button onClick={() => setActiveTab('predict')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === 'predict' ? 'bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
                 <TrendingUp className="w-4 h-4" />
@@ -144,20 +161,12 @@ function Workspace({ user }) {
               </button>
             </div>
 
-            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 mb-3">
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800">
               <span className="text-sm text-slate-700 dark:text-slate-300">Theme</span>
               <button onClick={toggleTheme} className="p-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700">
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
             </div>
-
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left bg-red-500 hover:bg-red-600 text-white"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">Logout</span>
-            </button>
           </aside>
 
           {/* Main Panel */}
@@ -173,6 +182,7 @@ function Workspace({ user }) {
               {activeTab === 'datasets' && <Datasets workspaceId={workspaceId} />}
               {activeTab === 'logs' && <TrainingLogs workspaceId={workspaceId} />}
               {activeTab === 'algorithms' && <Algorithms workspaceId={workspaceId} />}
+              {activeTab === 'comparison' && <ModelComparison workspaceId={workspaceId} />}
               {activeTab === 'predict' && <Predict workspaceId={workspaceId} />}
               {activeTab === 'chatbot' && <Chatbot workspaceId={workspaceId} />}
               {activeTab === 'feedback' && <FeedbackCollector user={user} workspaceId={workspaceId} />}

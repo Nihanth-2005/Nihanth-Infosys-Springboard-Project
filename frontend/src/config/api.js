@@ -12,11 +12,13 @@ export const API_ENDPOINTS = {
   PREDICT: `${API_BASE_URL}/api/predict`,
   PREDICT_DOWNLOAD: `${API_BASE_URL}/api/predict/download`,
   MODEL_INFO: `${API_BASE_URL}/api/model/info`,
+  MODEL_COMPARISON: `${API_BASE_URL}/api/model/comparison`,
   ALGORITHMS: `${API_BASE_URL}/api/model/algorithms`,
   TRAINING_LOGS: `${API_BASE_URL}/api/training/logs`,
   FEEDBACK: `${API_BASE_URL}/api/feedback`,
   CHATBOT: `${API_BASE_URL}/api/chatbot`,
   PROGRESS: `${API_BASE_URL}/api/progress`,
+  REPORT_DOWNLOAD: `${API_BASE_URL}/api/report/download`,
 };
 
 export default API_BASE_URL;

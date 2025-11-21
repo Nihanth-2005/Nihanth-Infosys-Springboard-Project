@@ -21,7 +21,7 @@ function Login() {
     setTimeout(() => {
       setShowLogin(true);
       setIsUnlocking(false);
-    }, 600);
+    }, 300);
   };
 
   const handleEmailLogin = async (e) => {

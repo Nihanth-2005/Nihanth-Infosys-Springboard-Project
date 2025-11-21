@@ -11,6 +11,7 @@ from threading import Lock
 import re
 
 import pandas as pd
+import numpy as np
 from flask import Flask, request, jsonify, send_file, Blueprint, current_app
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -35,6 +36,170 @@ progress_lock = Lock()
 def allowed_file(filename: str) -> bool:
     ext = os.path.splitext(filename)[1].lower()
     return ext in ALLOWED_EXTENSIONS
+
+def get_all_model_classes():
+    """Return all available model classes and their default params."""
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.svm import SVC
+    from sklearn.tree import DecisionTreeClassifier
+
+    return {
+        'RandomForestClassifier': (RandomForestClassifier, {'n_estimators': 100, 'random_state': 42}),
+        'LogisticRegression': (LogisticRegression, {'C': 1.0, 'penalty': 'l2', 'random_state': 42, 'max_iter': 1000}),
+        'SVM': (SVC, {'C': 1.0, 'kernel': 'rbf', 'random_state': 42}),
+        'DecisionTreeClassifier': (DecisionTreeClassifier, {'max_depth': None, 'random_state': 42})
+    }
+
+def select_best_model(results):
+    """Select the best model based on accuracy."""
+    if not results:
+        return None
+
+    # Sort by accuracy descending
+    sorted_results = sorted(results, key=lambda x: x['accuracy'] or 0, reverse=True)
+    return sorted_results[0]
+
+def generate_training_report(workspace_id, df, target_column, algorithm, metrics, training_time, model_path, all_results=None):
+    """Generate a PDF training report."""
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet
+
+        report_path = os.path.join(current_app.config['UPLOAD_FOLDER'], f"{workspace_id}_training_report_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.pdf")
+        doc = SimpleDocTemplate(report_path, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        story.append(Paragraph("AI Workspace Training Report", styles['Title']))
+        story.append(Spacer(1, 12))
+
+        # Dataset Summary
+        story.append(Paragraph("Dataset Summary", styles['Heading2']))
+        dataset_data = [
+            ["Total Rows", str(len(df))],
+            ["Total Columns", str(len(df.columns))],
+            ["Target Column", target_column],
+            ["Training Date", datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
+        ]
+        dataset_table = Table(dataset_data)
+        dataset_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(dataset_table)
+        story.append(Spacer(1, 12))
+
+        # Preprocessing Steps
+        story.append(Paragraph("Preprocessing Steps Applied", styles['Heading2']))
+        preprocessing_steps = [
+            "1. Loaded dataset (CSV/JSON)",
+            "2. Selected target column: " + target_column,
+            "3. Applied one-hot encoding for categorical features",
+            "4. Performed train-test split (80/20)",
+            "5. Trained model using " + algorithm
+        ]
+        for step in preprocessing_steps:
+            story.append(Paragraph(step, styles['Normal']))
+        story.append(Spacer(1, 12))
+
+        # Model Metrics
+        story.append(Paragraph("Model Performance Metrics", styles['Heading2']))
+        metrics_data = [["Metric", "Value"]]
+        if metrics.get('accuracy') is not None:
+            metrics_data.append(["Accuracy", f"{metrics['accuracy']:.4f}"])
+        if metrics.get('f1_score') is not None:
+            metrics_data.append(["F1 Score", f"{metrics['f1_score']:.4f}"])
+        if metrics.get('mse') is not None:
+            metrics_data.append(["MSE", f"{metrics['mse']:.4f}"])
+        if metrics.get('r2_score') is not None:
+            metrics_data.append(["R² Score", f"{metrics['r2_score']:.4f}"])
+        metrics_data.append(["Training Time", f"{training_time:.2f} seconds"])
+
+        metrics_table = Table(metrics_data)
+        metrics_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(metrics_table)
+        story.append(Spacer(1, 12))
+
+        # Algorithm Comparison (if available)
+        if all_results:
+            story.append(Paragraph("Algorithm Comparison", styles['Heading2']))
+            comparison_data = [["Algorithm", "Accuracy", "F1 Score", "Training Time"]]
+            for result in sorted(all_results, key=lambda x: x['accuracy'] or 0, reverse=True):
+                comparison_data.append([
+                    result['algorithm'],
+                    f"{result['accuracy']:.4f}" if result['accuracy'] else "N/A",
+                    f"{result['f1_score']:.4f}" if result['f1_score'] else "N/A",
+                    f"{result['training_time']:.2f}s"
+                ])
+            comparison_table = Table(comparison_data)
+            comparison_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            story.append(comparison_table)
+            story.append(Spacer(1, 12))
+
+        # Feature Importance (if available)
+        try:
+            with open(model_path, 'rb') as f:
+                model = pickle.load(f)
+            if hasattr(model, 'feature_importances_'):
+                story.append(Paragraph("Feature Importance", styles['Heading2']))
+                # Get training columns from DB
+                conn = get_db_connection(current_app.config['DATABASE'])
+                c = conn.cursor()
+                c.execute('SELECT training_columns FROM models WHERE model_path = ? ORDER BY created_at DESC LIMIT 1', (model_path,))
+                row = c.fetchone()
+                conn.close()
+                if row:
+                    training_columns = json.loads(row[0])
+                    importances = model.feature_importances_
+                    # Sort by importance
+                    sorted_idx = importances.argsort()[::-1]
+                    importance_data = [["Feature", "Importance"]]
+                    for idx in sorted_idx[:10]:  # Top 10
+                        importance_data.append([training_columns[idx], f"{importances[idx]:.4f}"])
+                    importance_table = Table(importance_data)
+                    importance_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                    ]))
+                    story.append(importance_table)
+        except Exception:
+            pass
+
+        doc.build(story)
+        return report_path
+    except Exception as e:
+        logger.exception("Error generating report")
+        return None
 
 def get_db_connection(db_path: str):
     conn = sqlite3.connect(db_path)
@@ -281,6 +446,8 @@ def upload_dataset():
 
     file = request.files['file']
     workspace_id = request.form.get('workspace_id')
+    algorithm = request.form.get('algorithm', 'RandomForestClassifier')
+    automl_mode = request.form.get('automl_mode', 'false').lower() == 'true'
 
     # Initialize progress
     with progress_lock:
@@ -338,24 +505,95 @@ def upload_dataset():
         X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, random_state=42)
 
         # ---- Training ----
-        with progress_lock:
-            training_progress[workspace_id].update({"progress": 60, "message": "Training model..."})
+        from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, r2_score
 
-        from sklearn.ensemble import RandomForestClassifier
-        from sklearn.metrics import accuracy_score, f1_score
+        if automl_mode:
+            # AutoML: Train on all algorithms and select best
+            with progress_lock:
+                training_progress[workspace_id].update({"progress": 60, "message": "AutoML: Training models with all algorithms..."})
 
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
-        t0 = time.time()
-        model.fit(X_train, y_train)
-        training_time = time.time() - t0
+            all_models = get_all_model_classes()
+            training_results = []
 
-        try:
+            total_algorithms = len(all_models)
+            progress_per_algorithm = 30 / total_algorithms  # 30% of progress for training
+
+            for i, (alg_name, (model_class, params)) in enumerate(all_models.items()):
+                try:
+                    model = model_class(**params)
+                    t0 = time.time()
+                    model.fit(X_train, y_train)
+                    training_time = time.time() - t0
+
+                    preds = model.predict(X_test)
+                    accuracy = float(accuracy_score(y_test, preds))
+                    f1 = float(f1_score(y_test, preds, average='weighted'))
+                    mse = float(mean_squared_error(y_test, preds)) if hasattr(y_test, 'dtype') and y_test.dtype.kind in 'fc' else None
+                    r2 = float(r2_score(y_test, preds)) if hasattr(y_test, 'dtype') and y_test.dtype.kind in 'fc' else None
+
+                    training_results.append({
+                        'algorithm': alg_name,
+                        'model': model,
+                        'accuracy': accuracy,
+                        'f1_score': f1,
+                        'mse': mse,
+                        'r2_score': r2,
+                        'training_time': training_time
+                    })
+
+                    # Update progress
+                    progress = 60 + int((i + 1) * progress_per_algorithm)
+                    with progress_lock:
+                        training_progress[workspace_id].update({
+                            "progress": progress,
+                            "message": f"Trained {alg_name} (accuracy: {accuracy:.3f})"
+                        })
+
+                except Exception as e:
+                    logger.warning(f"Failed to train {alg_name}: {e}")
+                    continue
+
+            # Select best model
+            best_result = select_best_model(training_results)
+            if not best_result:
+                raise ValueError("No models could be trained successfully")
+
+            model = best_result['model']
+            algorithm = best_result['algorithm']
+            accuracy = best_result['accuracy']
+            f1 = best_result['f1_score']
+            mse = best_result['mse']
+            r2 = best_result['r2_score']
+            training_time = best_result['training_time']
+        else:
+            # Manual: Train only selected algorithm
+            with progress_lock:
+                training_progress[workspace_id].update({"progress": 60, "message": f"Training {algorithm} model..."})
+
+            model_class, params = get_all_model_classes().get(algorithm, (None, None))
+            if not model_class:
+                raise ValueError(f"Unknown algorithm: {algorithm}")
+
+            model = model_class(**params)
+            t0 = time.time()
+            model.fit(X_train, y_train)
+            training_time = time.time() - t0
+
             preds = model.predict(X_test)
             accuracy = float(accuracy_score(y_test, preds))
             f1 = float(f1_score(y_test, preds, average='weighted'))
-        except Exception:
-            accuracy = None
-            f1 = None
+            mse = float(mean_squared_error(y_test, preds)) if hasattr(y_test, 'dtype') and y_test.dtype.kind in 'fc' else None
+            r2 = float(r2_score(y_test, preds)) if hasattr(y_test, 'dtype') and y_test.dtype.kind in 'fc' else None
+
+            training_results = [{
+                'algorithm': algorithm,
+                'model': model,
+                'accuracy': accuracy,
+                'f1_score': f1,
+                'mse': mse,
+                'r2_score': r2,
+                'training_time': training_time
+            }]
 
         with progress_lock:
             training_progress[workspace_id].update({"progress": 90, "message": "Saving model..."})
@@ -375,11 +613,11 @@ def upload_dataset():
                 workspace_id,
                 model_path,
                 target_column,
-                'RandomForest',
+                algorithm,
                 accuracy,
                 f1,
-                None,
-                None,
+                mse,
+                r2,
                 training_time,
                 json.dumps(training_columns),
                 datetime.now().isoformat()
@@ -390,6 +628,16 @@ def upload_dataset():
                 conn.close()
             except Exception:
                 pass
+
+        # Generate training report
+        with progress_lock:
+            training_progress[workspace_id].update({"progress": 95, "message": "Generating report..."})
+
+        report_path = generate_training_report(
+            workspace_id, df, target_column, algorithm,
+            {"accuracy": accuracy, "f1_score": f1, "mse": mse, "r2_score": r2},
+            training_time, model_path, training_results
+        )
 
         # Optionally generate simple Rasa lookup
         try:
@@ -417,7 +665,9 @@ def upload_dataset():
         return jsonify({
             "success": True,
             "model_path": model_path,
-            "metrics": {"accuracy": accuracy, "f1_score": f1, "training_time": training_time}
+            "report_path": report_path,
+            "algorithm": algorithm,
+            "metrics": {"accuracy": accuracy, "f1_score": f1, "mse": mse, "r2_score": r2, "training_time": training_time}
         })
 
     except Exception as e:
@@ -528,12 +778,37 @@ def predict():
     except Exception as e:
         logger.exception("Error in /predict")
         return jsonify({"error": str(e)}), 500
-    finally:
-        try:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-        except Exception:
-            pass
+
+# Download training report
+@api_bp.route('/report/download', methods=['GET'])
+def download_report():
+    workspace_id = request.args.get('workspace_id')
+    if not workspace_id:
+        return jsonify({"error": "Missing workspace_id"}), 400
+
+    try:
+        uploads_dir = current_app.config['UPLOAD_FOLDER']
+        reports = [f for f in os.listdir(uploads_dir)
+                   if f.startswith(f"{workspace_id}_training_report_") and f.endswith('.pdf')]
+
+        if not reports:
+            return jsonify({"error": "No training report found"}), 404
+
+        # Get latest report
+        latest_report = sorted(
+            reports,
+            key=lambda x: os.path.getmtime(os.path.join(uploads_dir, x)),
+            reverse=True
+        )[0]
+
+        report_path = os.path.join(uploads_dir, latest_report)
+
+        return send_file(report_path, as_attachment=True, download_name='training_report.pdf')
+
+    except Exception as e:
+        logger.exception("Error downloading report")
+        return jsonify({"error": str(e)}), 500
+
 
 # Download predictions
 @api_bp.route('/predict/download', methods=['POST'])
@@ -586,6 +861,16 @@ def model_info():
     if not result:
         return jsonify({"error": "No model found for this workspace"}), 404
 
+    # Determine health status
+    health_status = "unknown"
+    if result[1] is not None:  # accuracy
+        if result[1] >= 0.85:
+            health_status = "good"
+        elif result[1] >= 0.60:
+            health_status = "moderate"
+        else:
+            health_status = "poor"
+
     return jsonify({
         "algorithm": result[0],
         "accuracy": result[1],
@@ -594,7 +879,8 @@ def model_info():
         "r2_score": result[4],
         "training_time": result[5],
         "created_at": result[6],
-        "target_column": result[7]
+        "target_column": result[7],
+        "health_status": health_status
     })
 
 # Training logs
@@ -678,6 +964,138 @@ def list_models():
     finally:
         conn.close()
 
+# Dataset insights endpoint
+@api_bp.route('/dataset/insights', methods=['GET'])
+def dataset_insights():
+    import numpy as np
+    import pandas as pd
+    import json
+
+    def safe(obj):
+        """Convert numpy + non-serializable values to safe Python types."""
+        if isinstance(obj, (np.int64, np.int32, np.int16, int)):
+            return int(obj)
+        if isinstance(obj, (np.float64, np.float32, float)):
+            return float(obj)
+        if isinstance(obj, (np.ndarray,)):
+            return obj.tolist()
+        if pd.isna(obj):
+            return None
+        return obj
+
+    workspace_id = request.args.get('workspace_id')
+    dataset_id = request.args.get('dataset_id')
+
+    if not workspace_id:
+        return jsonify({"error": "Missing workspace_id"}), 400
+
+    try:
+        uploads_dir = current_app.config['UPLOAD_FOLDER']
+        datasets = [
+            f for f in os.listdir(uploads_dir)
+            if f.endswith(('.csv', '.json')) and workspace_id in f
+        ]
+
+        if not datasets:
+            return jsonify({"error": "No datasets found for this workspace"}), 404
+
+        # Select file
+        if dataset_id and dataset_id in datasets:
+            dataset_file = dataset_id
+        else:
+            dataset_file = sorted(
+                datasets,
+                key=lambda x: os.path.getmtime(os.path.join(uploads_dir, x)),
+                reverse=True
+            )[0]
+
+        file_path = os.path.join(uploads_dir, dataset_file)
+        ext = os.path.splitext(dataset_file)[1].lower()
+
+        # Load dataset
+        try:
+            if ext == '.csv':
+                df = pd.read_csv(file_path)
+            else:
+                df = pd.read_json(file_path)
+        except Exception:
+            # For JSON-lines
+            df = pd.read_json(file_path, lines=True)
+
+        if df.empty:
+            return jsonify({"error": "Dataset is empty"}), 400
+
+        # Column types
+        column_types = {}
+        for col in df.columns:
+            dtype = str(df[col].dtype)
+            if dtype == "object":
+                unique_ratio = df[col].nunique() / len(df)
+                column_types[col] = "categorical" if unique_ratio < 0.1 else "text"
+            elif "int" in dtype:
+                column_types[col] = "integer"
+            elif "float" in dtype:
+                column_types[col] = "float"
+            else:
+                column_types[col] = dtype
+
+        # Unique values
+        unique_values = {}
+        for col in df.columns:
+            try:
+                unique_values[col] = {
+                    safe(k): safe(v)
+                    for k, v in df[col].value_counts().head(10).to_dict().items()
+                }
+            except:
+                unique_values[col] = {}
+
+        # Correlation
+        numeric_cols = df.select_dtypes(include=[np.number])
+        correlation = (
+            numeric_cols.corr().applymap(safe).to_dict()
+            if numeric_cols.shape[1] > 1
+            else {}
+        )
+
+        # Class distribution (target = low cardinality last column)
+        class_distribution = {}
+        potential_targets = [c for c in df.columns if df[c].nunique() <= 20]
+
+        if potential_targets:
+            target = potential_targets[-1]
+
+            class_distribution = {
+                safe(k): safe(v)
+                for k, v in df[target].value_counts().to_dict().items()
+            }
+
+        # Sample rows
+        sample_rows = {
+            "top_5": df.head(5).applymap(safe).to_dict(orient="records"),
+            "bottom_5": df.tail(5).applymap(safe).to_dict(orient="records"),
+        }
+
+        insights = {
+            "dataset_id": dataset_file,
+            "total_rows": safe(len(df)),
+            "total_columns": safe(len(df.columns)),
+            "column_types": column_types,
+            "unique_values": unique_values,
+            "correlation": correlation,
+            "class_distribution": class_distribution,
+            "sample_rows": sample_rows,
+        }
+
+        # FINAL FIX — convert everything to JSON-safe types
+        insights = json.loads(json.dumps(insights, default=safe))
+
+        return jsonify({"insights": insights})
+
+    except Exception as e:
+        logger.exception("Error in dataset insights")
+        return jsonify({"error": str(e)}), 500
+
 # Algorithms endpoint
 @api_bp.route('/model/algorithms', methods=['GET'])
 def list_algorithms():
@@ -693,6 +1111,49 @@ def list_algorithms():
         {"name": "DecisionTreeClassifier", "version": "1.4", "method": "Supervised Learning", "params": {"max_depth": None, "random_state": 42}}
     ]
     return jsonify({"algorithms": algorithms})
+
+# Model comparison endpoint
+@api_bp.route('/model/comparison', methods=['GET'])
+def model_comparison():
+    workspace_id = request.args.get('workspace_id')
+    if not workspace_id:
+        return jsonify({"error": "Missing workspace_id"}), 400
+
+    conn = get_db_connection(current_app.config['DATABASE'])
+    try:
+        c = conn.cursor()
+        c.execute('''
+            SELECT id, algorithm, accuracy, f1_score, mse, r2_score, training_time, created_at, target_column
+            FROM models
+            WHERE workspace_id = ?
+            ORDER BY created_at DESC
+        ''', (workspace_id,))
+        rows = c.fetchall()
+        models = []
+        for r in rows:
+            health_status = "unknown"
+            if r[2] is not None:  # accuracy
+                if r[2] >= 0.85:
+                    health_status = "good"
+                elif r[2] >= 0.60:
+                    health_status = "moderate"
+                else:
+                    health_status = "poor"
+            models.append({
+                "id": r[0],
+                "algorithm": r[1],
+                "accuracy": r[2],
+                "f1_score": r[3],
+                "mse": r[4],
+                "r2_score": r[5],
+                "training_time": r[6],
+                "created_at": r[7],
+                "target_column": r[8],
+                "health_status": health_status
+            })
+        return jsonify({"models": models})
+    finally:
+        conn.close()
 
 # Feedback endpoints
 @api_bp.route('/feedback', methods=['POST'])
@@ -842,7 +1303,7 @@ def chatbot():
         if df is not None and target_column in df.columns:
             base_symptoms = [c for c in df.columns if c != target_column]
         else:
-            base_symptoms = [c for c in training_columns if '_' not in c]
+            base_symptoms = training_columns
 
         base_symptoms_clean = [re.sub(r'[_\-]', ' ', s.lower()).strip() for s in base_symptoms]
 

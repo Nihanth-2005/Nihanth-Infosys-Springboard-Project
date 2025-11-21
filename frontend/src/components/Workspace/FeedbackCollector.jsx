@@ -85,3 +85,4 @@ function FeedbackCollector({ user, workspaceId }) {
 }
 
 export default FeedbackCollector;
+

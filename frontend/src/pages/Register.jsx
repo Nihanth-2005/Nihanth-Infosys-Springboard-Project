@@ -13,8 +13,18 @@ function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
   const navigate = useNavigate();
   const { darkMode, toggleTheme } = useTheme();
+
+  const handleUnlock = () => {
+    setIsUnlocking(true);
+    setTimeout(() => {
+      setShowRegister(true);
+      setIsUnlocking(false);
+    }, 300);
+  };
 
   const handleEmailRegister = async (e) => {
     e.preventDefault();
@@ -55,15 +65,88 @@ function Register() {
     }
   };
 
+  // tweak these offsets to fine-tune vertical spacing relative to fingerprint
+  const titleOffset = -140; // px above the anchor (fingerprint center)
+  const bottomOffset = 320; // px below the anchor (fingerprint center)
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative overflow-hidden">
-      {/* Background image overlay */}
+
+      {/* Full-screen AI Background */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-25"
+        className={`absolute inset-0 bg-cover bg-center cursor-pointer transition-all duration-600 fingerprint-bg ${
+          isUnlocking ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
+        }`}
         style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80)',
+          backgroundImage: 'url(https://static.vecteezy.com/system/resources/previews/011/635/825/non_2x/abstract-square-interface-modern-background-concept-fingerprint-digital-scanning-visual-security-system-authentication-login-vector.jpg)',
+          backgroundPosition: 'center 30%',
         }}
+        onClick={handleUnlock}
       ></div>
+
+      {/* Central glow effect (keeps fingerprint visually highlighted) */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-radial from-blue-400/20 via-purple-400/10 to-transparent rounded-full pointer-events-none"></div>
+
+      {/* ===== BRUTE-FORCE ANCHOR: position at fingerprint visual center (center horizontally, 30% vertically) ===== */}
+      <div
+        className="central-anchor"
+        style={{
+          position: 'absolute',
+          top: '30%',      // matches backgroundPosition 'center 30%'
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none', // allow clicks to pass through to background
+          zIndex: 15,
+        }}
+      >
+        {/* Title (only show when register form is hidden) */}
+        {!showRegister && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            style={{
+              position: 'relative',
+              top: `${titleOffset}px`, // push up from anchor
+              left: '0',
+              textAlign: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            <h1
+              className="text-3xl font-bold text-white mb-2 tracking-wide"
+              style={{ textShadow: '0 0 10px rgba(0, 200, 255, 0.6)' }}
+            >
+              Secure Registration
+            </h1>
+            <p className="text-blue-300 text-sm font-medium">
+              AI Workspace Account Creation
+            </p>
+            <div className="w-20 h-0.5 bg-gradient-to-r from-blue-400 to-transparent mx-auto mt-3 rounded-full"></div>
+          </motion.div>
+        )}
+
+        {/* Bottom instruction (only show when register form is hidden) */}
+        {!showRegister && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            style={{
+              position: 'relative',
+              top: `${bottomOffset}px`, // push down from anchor
+              left: '0',
+              textAlign: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            <p className="text-slate-300 text-sm font-medium">
+              Tap on fingerprint to Begin Registration
+            </p>
+          </motion.div>
+        )}
+      </div>
+      {/* ===== end anchor block ===== */}
 
       {/* Theme toggle */}
       <div className="absolute top-4 right-4 z-20">
@@ -77,19 +160,57 @@ function Register() {
         </motion.button>
       </div>
 
-      {/* Animated background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 dark:bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-300 dark:bg-yellow-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-300 dark:bg-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-      </div>
+      {/* Register form (appears after click) */}
+      {showRegister && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          {/* overlay */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="glass-card rounded-2xl p-8 w-full max-w-md z-10 shadow-2xl"
-      >
+          {/* Neural network animated overlay */}
+          <div className="absolute inset-0 overflow-hidden opacity-30">
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1920 1080">
+              <defs>
+                <linearGradient id="neuralGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgba(59, 130, 246, 0.6)" />
+                  <stop offset="50%" stopColor="rgba(147, 51, 234, 0.6)" />
+                  <stop offset="100%" stopColor="rgba(236, 72, 153, 0.6)" />
+                </linearGradient>
+              </defs>
+
+              <path d="M100,200 L400,200" stroke="url(#neuralGradient)" strokeWidth="1">
+                <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="4s" repeatCount="indefinite" />
+              </path>
+              <path d="M500,300 L800,300" stroke="url(#neuralGradient)" strokeWidth="1">
+                <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="3s" repeatCount="indefinite" />
+              </path>
+              <path d="M900,400 L1200,400" stroke="url(#neuralGradient)" strokeWidth="1">
+                <animate attributeName="stroke-dasharray" values="0,300;300,0" dur="5s" repeatCount="indefinite" />
+              </path>
+
+              <circle cx="300" cy="200" r="3" fill="rgba(59, 130, 246, 0.8)" className="animate-ping" />
+              <circle cx="700" cy="300" r="3" fill="rgba(147, 51, 234, 0.8)" className="animate-ping" />
+              <circle cx="500" cy="400" r="3" fill="rgba(236, 72, 153, 0.8)" className="animate-ping" />
+            </svg>
+          </div>
+
+          {/* animated blobs */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 dark:bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-300 dark:bg-yellow-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-300 dark:bg-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+          </div>
+
+          {/* glass register card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="glass-card rounded-2xl p-8 w-full max-w-md z-10 shadow-2xl"
+          >
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
@@ -216,7 +337,9 @@ function Register() {
             Sign in
           </Link>
         </p>
-      </motion.div>
+          </motion.div>
+        </motion.div>
+      )}
 
       <style>{`
         @keyframes blob {
@@ -232,6 +355,25 @@ function Register() {
         }
         .animation-delay-4000 {
           animation-delay: 4s;
+        }
+
+        .bg-gradient-radial {
+          background: radial-gradient(circle, var(--tw-gradient-stops));
+        }
+
+        .fingerprint-bg:hover {
+          box-shadow: 0 0 50px rgba(59, 130, 246, 0.3);
+          transition: box-shadow 0.3s ease;
+        }
+
+        .fingerprint-bg:active {
+          animation: pulse 1s ease;
+        }
+
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+          70% { box-shadow: 0 0 0 30px rgba(59, 130, 246, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
       `}</style>
     </div>

@@ -7,7 +7,10 @@ import {
   TrendingUp,
   Clock,
   Target,
-  Loader
+  Loader,
+  CheckCircle,
+  AlertTriangle,
+  XCircle
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -118,6 +121,43 @@ function ModelInfo({ workspaceId }) {
           Model Information
         </h2>
 
+        {/* Health Status Indicator */}
+        {modelInfo.health_status && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-6 rounded-xl border-2 mb-6 ${
+              modelInfo.health_status === 'good'
+                ? 'bg-green-900/20 border-green-500/50'
+                : modelInfo.health_status === 'moderate'
+                ? 'bg-yellow-900/20 border-yellow-500/50'
+                : 'bg-red-900/20 border-red-500/50'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              {modelInfo.health_status === 'good' && <CheckCircle className="w-8 h-8 text-green-400" />}
+              {modelInfo.health_status === 'moderate' && <AlertTriangle className="w-8 h-8 text-yellow-400" />}
+              {modelInfo.health_status === 'poor' && <XCircle className="w-8 h-8 text-red-400" />}
+              <div>
+                <h3 className={`text-xl font-bold ${
+                  modelInfo.health_status === 'good'
+                    ? 'text-green-400'
+                    : modelInfo.health_status === 'moderate'
+                    ? 'text-yellow-400'
+                    : 'text-red-400'
+                }`}>
+                  Model Health: {modelInfo.health_status.charAt(0).toUpperCase() + modelInfo.health_status.slice(1)}
+                </h3>
+                <p className="text-slate-300 mt-1">
+                  {modelInfo.health_status === 'good' && 'Excellent performance! Your model is ready for production use.'}
+                  {modelInfo.health_status === 'moderate' && 'Decent performance. Consider fine-tuning or trying different algorithms.'}
+                  {modelInfo.health_status === 'poor' && 'Performance needs improvement. Try different algorithms or preprocess your data.'}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="p-6 bg-blue-900/40 rounded-xl border border-blue-700/40">
@@ -125,7 +165,7 @@ function ModelInfo({ workspaceId }) {
               <Target className="w-5 h-5 text-blue-400" />
               <p className="text-sm font-medium text-slate-300">Algorithm</p>
             </div>
-            <p className="text-xl font-bold text-blue-400">
+            <p className="text-lg font-bold text-blue-400 break-words leading-tight">
               {modelInfo.algorithm}
             </p>
           </div>

@@ -66,125 +66,129 @@ function Chatbot({ workspaceId }) {
   };
 
   return (
-    <div
-      className="min-h-screen w-full bg-cover bg-center bg-fixed p-8"
-      style={{
-        backgroundImage:
-          "url('https://images.stockcake.com/public/5/d/0/5d01f4cb-86f4-4bb1-83c8-166f3c5db1a1_large/neural-network-glow-stockcake.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.85)",
-        backgroundBlendMode: "overlay",
-      }}
-    >
-      {/* Chat container */}
-      <div className="max-w-5xl mx-auto rounded-2xl p-8 shadow-2xl border border-slate-800 bg-slate-900/70 backdrop-blur-md flex flex-col h-[80vh]">
-        {/* Header */}
-        <h2 className="text-2xl font-bold mb-6 text-slate-100 flex items-center gap-3">
-          <MessageSquare className="w-6 h-6 text-blue-400" />
-          AI Chatbot
-        </h2>
-
-        {/* Chat area with visible background */}
+    <div className="min-h-screen w-full p-8">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Chat container with background */}
         <div
-          className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 rounded-2xl p-6 border border-slate-700/50 shadow-inner backdrop-blur-sm"
+          className="rounded-2xl p-8 shadow-2xl border border-slate-800 relative overflow-hidden backdrop-blur-xl"
           style={{
             backgroundImage:
-              "url('https://images.stockcake.com/public/5/d/0/5d01f4cb-86f4-4bb1-83c8-166f3c5db1a1_large/neural-network-glow-stockcake.jpg')",
+              "url('https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
             backgroundSize: "cover",
             backgroundPosition: "center",
-            backgroundAttachment: "fixed",
-            backgroundColor: "rgba(0,0,0,0.45)",
+            backgroundColor: "rgba(15, 23, 42, 0.85)",
             backgroundBlendMode: "overlay",
           }}
         >
-          <AnimatePresence>
-            {messages.map((message, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className={`flex gap-3 ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {message.role === "bot" && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-800/30">
+          {/* Overlay to ensure text readability */}
+          <div className="absolute inset-0 bg-slate-900/40"></div>
+
+          <div className="relative z-10 flex flex-col h-[75vh]">
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3 mb-2">
+                <MessageSquare className="w-6 h-6 text-blue-400" />
+                AI Health Assistant
+              </h2>
+              <p className="text-slate-300 text-sm">
+                Describe your symptoms or ask about your models and predictions
+              </p>
+            </div>
+
+            {/* Chat area */}
+            <div className="flex-1 overflow-y-auto mb-4 space-y-6 pr-2 rounded-2xl p-6 border border-slate-700/50 shadow-inner bg-slate-900/20 backdrop-blur-sm">
+              <AnimatePresence>
+                {messages.map((message, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className={`flex gap-4 ${
+                      message.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    {message.role === "bot" && (
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-800/30 ring-2 ring-blue-500/20">
+                        <Bot className="w-5 h-5 text-white" />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-5 py-4 shadow-lg ${
+                        message.role === "user"
+                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-blue-900/30"
+                          : "bg-white/10 text-slate-100 border border-slate-600/50 backdrop-blur-md shadow-slate-900/20"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {message.content}
+                      </p>
+                    </div>
+                    {message.role === "user" && (
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shadow-lg ring-2 ring-slate-500/20">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Typing indicator */}
+              {loading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  className="flex gap-4"
+                >
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-800/30 ring-2 ring-blue-500/20">
                     <Bot className="w-5 h-5 text-white" />
                   </div>
-                )}
-                <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-md ${
-                    message.role === "user"
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                      : "bg-slate-900/70 text-slate-100 border border-slate-700/70 backdrop-blur-sm"
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {message.content}
-                  </p>
-                </div>
-                {message.role === "user" && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
+                  <div className="bg-white/10 rounded-2xl px-5 py-4 border border-slate-600/50 backdrop-blur-md shadow-lg">
+                    <div className="flex gap-1">
+                      <div
+                        className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      ></div>
+                    </div>
                   </div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {/* Typing indicator */}
-          {loading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex gap-3"
-            >
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-800/30">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div className="bg-slate-900/70 rounded-2xl px-4 py-3 border border-slate-700 backdrop-blur-sm">
-                <div className="flex gap-1">
-                  <div
-                    className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0ms" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "150ms" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "300ms" }}
-                  ></div>
-                </div>
-              </div>
-            </motion.div>
-          )}
+                </motion.div>
+              )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="flex gap-3 mt-auto">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/60 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 backdrop-blur-sm"
-            disabled={loading}
-          />
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSend}
-            disabled={!input.trim() || loading}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <Send className="w-5 h-5" />
-          </motion.button>
+            {/* Input */}
+            <div className="flex gap-4 mt-auto">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask me about your models, symptoms, or predictions..."
+                className="flex-1 px-5 py-4 rounded-xl border border-slate-600/50 bg-slate-800/40 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-md shadow-lg"
+                disabled={loading}
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSend}
+                disabled={!input.trim() || loading}
+                className="px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+              >
+                <Send className="w-5 h-5" />
+                <span className="hidden sm:inline">Send</span>
+              </motion.button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

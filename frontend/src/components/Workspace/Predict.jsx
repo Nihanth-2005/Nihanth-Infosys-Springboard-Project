@@ -111,23 +111,26 @@ function Predict({ workspaceId }) {
     : [];
 
   return (
-    <div
-      className="min-h-screen w-full bg-cover bg-center bg-no-repeat bg-fixed p-8"
-      style={{
-        backgroundImage:
-          "url('https://thumbs.dreamstime.com/b/technology-network-digital-data-wave-background-glowing-connections-forming-abstract-futuristic-innovation-concept-380330795.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.65)",
-        backgroundBlendMode: "overlay",
-      }}
-    >
+    <div className="min-h-screen w-full p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="rounded-2xl p-8 bg-slate-900/70 backdrop-blur-md shadow-2xl border border-slate-800">
-          <h2 className="text-2xl font-bold mb-6 text-slate-100 flex items-center gap-3">
-            <TrendingUp className="w-6 h-6 text-blue-400" />
-            Make Predictions
-          </h2>
+        <div
+          className="rounded-2xl p-8 backdrop-blur-md shadow-2xl border border-slate-800 relative overflow-hidden"
+          style={{
+            backgroundImage:
+              "url('https://thumbs.dreamstime.com/b/technology-network-digital-data-wave-background-glowing-connections-forming-abstract-futuristic-innovation-concept-380330795.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundColor: "rgba(15, 23, 42, 0.85)",
+            backgroundBlendMode: "overlay",
+          }}
+        >
+          {/* Overlay to ensure text readability */}
+          <div className="absolute inset-0 bg-slate-900/30"></div>
+          <div className="relative z-10">
+            <h2 className="text-2xl font-bold mb-6 text-slate-100 flex items-center gap-3">
+              <TrendingUp className="w-6 h-6 text-blue-400" />
+              Make Predictions
+            </h2>
 
           {/* File Upload */}
           <div className="mb-6">
@@ -196,6 +199,8 @@ function Predict({ workspaceId }) {
               </>
             )}
           </motion.button>
+            </div>
+          </div>
         </div>
 
         {/* Results */}
@@ -274,7 +279,6 @@ function Predict({ workspaceId }) {
           </motion.div>
         )}
       </div>
-    </div>
   );
 }
 
