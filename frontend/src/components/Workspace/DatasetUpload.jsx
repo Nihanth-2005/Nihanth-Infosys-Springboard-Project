@@ -375,7 +375,7 @@ function DatasetUpload({ workspaceId }) {
                 <div className="p-4 bg-blue-900/30 rounded-lg">
                   <p className="text-sm text-gray-300 mb-1">Accuracy</p>
                   <p className="text-2xl font-bold text-blue-400">
-                    {((results.accuracy * 100) || 0).toFixed(2)}%
+                    {((results.accuracy ) || 0).toFixed(2)}%
                   </p>
                 </div>
               )}

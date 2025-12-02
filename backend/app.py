@@ -625,7 +625,9 @@ def upload_dataset():
     try:
         # ---- Save file ----
         filename = secure_filename(file.filename)
-        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        # Include workspace_id in filename to make it easier to list per workspace
+        workspace_filename = f"{workspace_id}_{filename}"
+        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], workspace_filename)
         file.save(upload_path)
         with progress_lock:
             training_progress[workspace_id].update({"progress": 20, "message": "Reading dataset..."})
@@ -1057,24 +1059,23 @@ def model_info():
     if not result:
         return jsonify({"error": "No model found for this workspace"}), 404
 
-    # Generate random accuracy for display
-    display_accuracy = generate_random_accuracy()
-    # Generate random F1 score for display
-    display_f1_score = generate_random_f1_score()
+    # Use actual stored accuracy and metrics
+    actual_accuracy = result[1] or 0
+    actual_f1_score = result[2] or 0
 
-    # Determine health status based on random accuracy
+    # Determine health status based on actual accuracy
     health_status = "unknown"
-    if display_accuracy >= 95:
+    if actual_accuracy >= 95:
         health_status = "good"
-    elif display_accuracy >= 85:
+    elif actual_accuracy >= 85:
         health_status = "moderate"
     else:
         health_status = "poor"
 
     return jsonify({
         "algorithm": result[0],
-        "accuracy": display_accuracy,  # Use random accuracy
-        "f1_score": display_f1_score,  # Use random F1 score
+        "accuracy": actual_accuracy,
+        "f1_score": actual_f1_score,
         "mse": result[3],
         "r2_score": result[4],
         "training_time": result[5],
@@ -1331,23 +1332,22 @@ def model_comparison():
         rows = c.fetchall()
         models = []
         for r in rows:
-            # Generate random accuracy for display
-            display_accuracy = generate_random_accuracy()
-            # Generate random F1 score for display
-            display_f1_score = generate_random_f1_score()
+            # Use actual stored metrics
+            actual_accuracy = r[2] or 0
+            actual_f1_score = r[3] or 0
 
             health_status = "unknown"
-            if display_accuracy >= 95:
+            if actual_accuracy >= 95:
                 health_status = "good"
-            elif display_accuracy >= 85:
+            elif actual_accuracy >= 85:
                 health_status = "moderate"
             else:
                 health_status = "poor"
             models.append({
                 "id": r[0],
                 "algorithm": r[1],
-                "accuracy": display_accuracy,  # Use random accuracy
-                "f1_score": display_f1_score,  # Use random F1 score
+                "accuracy": actual_accuracy,
+                "f1_score": actual_f1_score,
                 "mse": r[4],
                 "r2_score": r[5],
                 "training_time": r[6],
